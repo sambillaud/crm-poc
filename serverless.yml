@@ -1,7 +1,7 @@
 # "org" ensures this Service is used with the correct Serverless Framework Access Key.
-org: sambillaud
+#org: sambillaud
 # "app" enables Serverless Framework Dashboard features and sharing them with other Services.
-app: crm-poc
+#app: crm-poc
 # "service" is the name of this project. This will also be added to your AWS resource names.
 service: crm-poc
 
@@ -17,19 +17,19 @@ provider:
     RAW_BUCKET: crm-raw-${sls:stage}
     ENRICHED_BUCKET: crm-enriched-${sls:stage}
 
-iam:
-    role:
-      statements:
-        - Effect: Allow
-          Action:
-            - s3:GetObject
-            - s3:PutObject
-            - s3:ListBucket
-          Resource:
-            - arn:aws:s3:::crm-raw-${sls:stage}
-            - arn:aws:s3:::crm-raw-${sls:stage}/*
-            - arn:aws:s3:::crm-enriched-${sls:stage}
-            - arn:aws:s3:::crm-enriched-${sls:stage}/*
+  iam:
+      role:
+        statements:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:ListBucket
+            Resource:
+              - arn:aws:s3:::crm-raw-${sls:stage}
+              - arn:aws:s3:::crm-raw-${sls:stage}/*
+              - arn:aws:s3:::crm-enriched-${sls:stage}
+              - arn:aws:s3:::crm-enriched-${sls:stage}/*
 
 functions:
   health:
@@ -43,6 +43,24 @@ functions:
     events:
       - httpApi:
           path: /
+          method: get
+  createCustomer:
+    handler: services/customers/handler.create
+    events:
+      - httpApi:
+          path: /customers
+          method: post
+  getCustomer:
+    handler: services/customers/handler.get
+    events:
+      - httpApi:
+          path: /customers/{id}
+          method: get
+  listCustomers:
+    handler: services/customers/handler.list
+    events:
+      - httpApi:
+          path: /customers
           method: get
 
 resources:
