@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const s3 = require('../../lib/s3');
 
+const ENRICHED_BUCKET = process.env.ENRICHED_BUCKET;
 const RAW_BUCKET = process.env.RAW_BUCKET;
 const PREFIX = 'customers/';
 
@@ -34,8 +35,34 @@ const listCustomers = async () => {
     return customers;
 };
 
+const enrichCustomer = async (customerId) => {
+    const customer = await getCustomer(customerId);
+
+    // Simulated credit score
+    const creditScore = Math.floor(Math.random() * 300) + 500;
+
+    const riskBand = 
+        creditScore >= 750 ? 'LOW' :
+        creditScore >= 600 ? 'MEDIUM' : 
+        'HIGH'; 
+
+    const enrichedCustomer = {
+        ...customer,
+        creditScore,
+        riskBand,
+        status: 'ENRICHED',
+        enrichedAt: new Date().toISOString(),
+    };
+
+    const key = `${PREFIX}${customerId}.json`;
+    await s3.putJson(ENRICHED_BUCKET, key, enrichedCustomer);
+
+    return enrichedCustomer;
+};
+
 module.exports = {
     createCustomer,
     getCustomer,
     listCustomers,
+    enrichCustomer,
 };

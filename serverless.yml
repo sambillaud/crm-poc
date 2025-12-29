@@ -62,6 +62,12 @@ functions:
       - httpApi:
           path: /customers
           method: get
+  enrichCustomer:
+    handler: services/customers/handler.enrich
+    events:
+      - httpApi:
+          path: /customers/{id}/enrich
+          method: post
 
 resources:
   Resources:

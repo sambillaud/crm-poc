@@ -46,3 +46,18 @@ module.exports.list = async () => {
         return jsonResponse(500, { message: 'Internal server error' });
     }
 };
+
+module.exports.enrich = async (event) => {
+    try {
+        const customerId = event.pathParameters.id;
+        const enrichedCustomer = await service.enrichCustomer(customerId);
+
+        logger.info('Customer enriched', { 
+            customerId: customerId,
+            riskBand: enrichedCustomer.riskBand, });
+        return jsonResponse(200, enrichedCustomer);
+    } catch (error) {
+        logger.error('Error enriching customer', { error: error.message });
+        return jsonResponse(500, { message: 'Enrichment failed' });
+    }
+};
