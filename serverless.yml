@@ -1,0 +1,57 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: sambillaud
+# "app" enables Serverless Framework Dashboard features and sharing them with other Services.
+app: crm-poc
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: crm-poc
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  # Uncomment to easily set up a custom domain. Read the docs for more details:
+  # https://www.serverless.com/framework/docs/providers/aws/guide/domains
+  # domain: api.example.com
+  region: eu-west-1
+  stage: dev
+  environment:
+    RAW_BUCKET: crm-raw-${sls:stage}
+    ENRICHED_BUCKET: crm-enriched-${sls:stage}
+
+iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:GetObject
+            - s3:PutObject
+            - s3:ListBucket
+          Resource:
+            - arn:aws:s3:::crm-raw-${sls:stage}
+            - arn:aws:s3:::crm-raw-${sls:stage}/*
+            - arn:aws:s3:::crm-enriched-${sls:stage}
+            - arn:aws:s3:::crm-enriched-${sls:stage}/*
+
+functions:
+  health:
+    handler: services/health/handler.health
+    events:
+      - httpApi:
+          path: /health
+          method: get
+  hello:
+    handler: handler.hello
+    events:
+      - httpApi:
+          path: /
+          method: get
+
+resources:
+  Resources:
+    RawBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: crm-raw-${sls:stage}
+    EnrichedBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: crm-enriched-${sls:stage}
