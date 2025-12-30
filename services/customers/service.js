@@ -4,6 +4,7 @@ const s3 = require('../../lib/s3');
 const ENRICHED_BUCKET = process.env.ENRICHED_BUCKET;
 const RAW_BUCKET = process.env.RAW_BUCKET;
 const PREFIX = 'customers/';
+const ENRICHMENT_VERSION = 'v1';
 
 const createCustomer = async (customerData) => {
     const customerId = uuidv4();
@@ -35,22 +36,44 @@ const listCustomers = async () => {
     return customers;
 };
 
+const enrichedExists = async (id) => {
+    try {
+        await s3.getJson(
+            ENRICHED_BUCKET,
+            `customers/${id}.json`
+        );
+        return true;
+    } catch {
+        return false;
+    }
+};
+
 const enrichCustomer = async (customerId) => {
+
+    const alreadyEnriched = await enrichedExists(customerId);
+    if (alreadyEnriched) {
+        return s3.getJson(
+            ENRICHED_BUCKET,
+            `customers/${customerId}.json`
+        );
+    }
+
     const customer = await getCustomer(customerId);
 
     // Simulated credit score
     const creditScore = Math.floor(Math.random() * 300) + 500;
 
-    const riskBand = 
+    const riskBand =
         creditScore >= 750 ? 'LOW' :
-        creditScore >= 600 ? 'MEDIUM' : 
-        'HIGH'; 
+            creditScore >= 600 ? 'MEDIUM' :
+                'HIGH';
 
     const enrichedCustomer = {
         ...customer,
         creditScore,
         riskBand,
         status: 'ENRICHED',
+        enrichmentVersion: ENRICHMENT_VERSION,
         enrichedAt: new Date().toISOString(),
     };
 

@@ -16,6 +16,8 @@ provider:
   environment:
     RAW_BUCKET: crm-raw-${sls:stage}
     ENRICHED_BUCKET: crm-enriched-${sls:stage}
+    ENRICHMENT_QUEUE_URL:
+      Ref: EnrichmentQueue
 
   iam:
       role:
@@ -30,6 +32,11 @@ provider:
               - arn:aws:s3:::crm-raw-${sls:stage}/*
               - arn:aws:s3:::crm-enriched-${sls:stage}
               - arn:aws:s3:::crm-enriched-${sls:stage}/*
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+            Resource:
+              - arn:aws:sqs:${self:provider.region}:${aws:accountId}:enrichment-queue-${sls:stage}
 
 functions:
   health:
@@ -68,6 +75,14 @@ functions:
       - httpApi:
           path: /customers/{id}/enrich
           method: post
+  enrichmentWorker:
+    handler: services/enrichment/handler.run
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - EnrichmentQueue
+              - Arn
 
 resources:
   Resources:
@@ -79,3 +94,7 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: crm-enriched-${sls:stage}
+    EnrichmentQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: enrichment-queue-${sls:stage}

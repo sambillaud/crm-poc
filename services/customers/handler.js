@@ -1,6 +1,8 @@
 const logger = require('../../lib/logger');
 const service = require('./service');
+const AWS = require('aws-sdk');
 
+const sqs = new AWS.SQS();
 const jsonResponse = (statusCode, body) => ({
     statusCode,
     body: JSON.stringify(body),
@@ -48,16 +50,18 @@ module.exports.list = async () => {
 };
 
 module.exports.enrich = async (event) => {
-    try {
-        const customerId = event.pathParameters.id;
-        const enrichedCustomer = await service.enrichCustomer(customerId);
+    const { id } = event.pathParameters;
 
-        logger.info('Customer enriched', { 
-            customerId: customerId,
-            riskBand: enrichedCustomer.riskBand, });
-        return jsonResponse(200, enrichedCustomer);
-    } catch (error) {
-        logger.error('Error enriching customer', { error: error.message });
-        return jsonResponse(500, { message: 'Enrichment failed' });
-    }
+    await sqs.sendMessage({
+        QueueUrl: process.env.ENRICHMENT_QUEUE_URL,
+        MessageBody: JSON.stringify({
+            customerId: id,
+            requestId: Date.now(),
+        }),
+    }).promise();
+
+    return jsonResponse(202, { 
+        message: 'Enrichment request accepted' , 
+        customerId: id 
+    });
 };
